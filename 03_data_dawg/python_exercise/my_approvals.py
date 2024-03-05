@@ -1,7 +1,10 @@
 from argparse import ArgumentParser
 from dataclasses import dataclass
+from typing import cast
 
+from eth_typing import Address, HexStr
 from web3 import Web3
+from web3.exceptions import BadFunctionCallOutput
 
 NODE_PROVIDER = 'https://eth-mainnet.g.alchemy.com/v2/7s0nlb02rkkhdjj6su89JmyHVFgsm6kW'
 APPROVAL_SIGNATURE = Web3.keccak(text='Approval(address,address,uint256)').hex()
@@ -39,7 +42,11 @@ class ApprovalScanner:
         return f'0x{leading_zeros}{eoa[2:]}'
 
     def _get_contract_name(self, address: str) -> str:
-        return self.w3.eth.contract(address, abi=NAMED_CONTRACT_ABI).functions.name().call()
+        contract = self.w3.eth.contract(cast(Address, address), abi=NAMED_CONTRACT_ABI)
+        try:
+            return contract.functions.name().call()
+        except BadFunctionCallOutput:
+            return 'Unknown'
 
     def get_approvals(self, eoa: str) -> list[Approval]:
         raw_approvals = self.w3.eth.get_logs({
