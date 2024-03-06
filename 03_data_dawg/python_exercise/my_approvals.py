@@ -10,13 +10,6 @@ from events_scanner import ERC20EventScanner
 
 NODE_PROVIDER = 'https://eth-mainnet.g.alchemy.com/v2/7s0nlb02rkkhdjj6su89JmyHVFgsm6kW'
 
-NAMED_CONTRACT_ABI = [
-    {"inputs": [], "name": "name", "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-     "stateMutability": "view", "type": "function"},
-    {"inputs": [], "name": "symbol", "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-     "stateMutability": "view", "type": "function"}
-]
-
 
 @dataclass
 class Approval:
