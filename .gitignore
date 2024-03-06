@@ -421,4 +421,7 @@ tags
 .history
 .ionide
 
+
+**/venv/**
+**/.idea/**
 # End of https://www.toptal.com/developers/gitignore/api/vim,pycharm,visualstudiocode,macos,solidity,soliditytruffle,node
