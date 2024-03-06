@@ -3,7 +3,6 @@ from web3 import Web3
 NODE_PROVIDER = 'https://eth-mainnet.g.alchemy.com/v2/7s0nlb02rkkhdjj6su89JmyHVFgsm6kW'
 APPROVAL_SIGNATURE = Web3.keccak(text='Approval(address,address,uint256)').hex()
 TRANSFER_SIGNATURE = Web3.keccak(text='Transfer(address,address,uint256)').hex()
-TRANSFER_SIGNATURE = Web3.keccak(text='Transfer(address,address,uint256)').hex()
 ERC20_APPROVAL_TOPICS_COUNT = 3
 
 NAMED_CONTRACT_ABI = [
