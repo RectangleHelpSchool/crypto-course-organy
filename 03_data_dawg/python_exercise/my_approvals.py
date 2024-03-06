@@ -1,11 +1,21 @@
-from dataclasses import dataclass
 from argparse import ArgumentParser
-from eth_typing import Address
+from dataclasses import dataclass
+from typing import cast
+
+from eth_typing import Address, HexStr
 from web3 import Web3
+from web3.exceptions import BadFunctionCallOutput
 
 NODE_PROVIDER = 'https://eth-mainnet.g.alchemy.com/v2/7s0nlb02rkkhdjj6su89JmyHVFgsm6kW'
-APPROVAL_SIGNATURE = '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+APPROVAL_SIGNATURE = Web3.keccak(text='Approval(address,address,uint256)').hex()
 ERC20_APPROVAL_TOPICS_COUNT = 3
+
+NAMED_CONTRACT_ABI = [
+    {"inputs": [], "name": "name", "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+     "stateMutability": "view", "type": "function"},
+    {"inputs": [], "name": "symbol", "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+     "stateMutability": "view", "type": "function"}
+]
 
 
 @dataclass
@@ -26,21 +36,17 @@ class ApprovalScanner:
     def __init__(self, w3: Web3):
         self.w3 = w3
 
-    def _get_transaction(self, eoa: Address) -> None:
-        self.w3.eth.get_transaction_count(eoa)
-
     @staticmethod
     def _align_eoa(eoa: str) -> str:
         leading_zeros = '0' * 24
         return f'0x{leading_zeros}{eoa[2:]}'
 
     def _get_contract_name(self, address: str) -> str:
-        abi = [{"inputs": [], "name": "name", "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-                "stateMutability": "view", "type": "function"},
-               {"inputs": [], "name": "symbol", "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-                "stateMutability": "view", "type": "function"}]
-        contract = self.w3.eth.contract(address, abi=abi)
-        return contract.functions.name().call()
+        contract = self.w3.eth.contract(cast(Address, address), abi=NAMED_CONTRACT_ABI)
+        try:
+            return contract.functions.name().call()
+        except BadFunctionCallOutput:
+            return 'Unknown'
 
     def get_approvals(self, eoa: str) -> list[Approval]:
         raw_approvals = self.w3.eth.get_logs({
