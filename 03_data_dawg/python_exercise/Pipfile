@@ -5,6 +5,9 @@ name = "pypi"
 
 [packages]
 web3 = "*"
+jupyter = "*"
+pandas = "*"
+matplotlib = "*"
 
 [dev-packages]
 

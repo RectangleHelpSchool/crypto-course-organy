@@ -2,20 +2,13 @@ from argparse import ArgumentParser
 from dataclasses import dataclass
 from typing import cast
 
-from eth_typing import Address, HexStr
+from eth_typing import Address
 from web3 import Web3
 from web3.exceptions import BadFunctionCallOutput
 
-NODE_PROVIDER = 'https://eth-mainnet.g.alchemy.com/v2/7s0nlb02rkkhdjj6su89JmyHVFgsm6kW'
-APPROVAL_SIGNATURE = Web3.keccak(text='Approval(address,address,uint256)').hex()
-ERC20_APPROVAL_TOPICS_COUNT = 3
+from events_scanner import ERC20EventScanner
 
-NAMED_CONTRACT_ABI = [
-    {"inputs": [], "name": "name", "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-     "stateMutability": "view", "type": "function"},
-    {"inputs": [], "name": "symbol", "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-     "stateMutability": "view", "type": "function"}
-]
+NODE_PROVIDER = 'https://eth-mainnet.g.alchemy.com/v2/7s0nlb02rkkhdjj6su89JmyHVFgsm6kW'
 
 
 @dataclass
@@ -31,37 +24,22 @@ def get_eoa_address() -> str:
 
 
 class ApprovalScanner:
-    w3: Web3
+    _w3: Web3
+    _event_scanner: ERC20EventScanner
 
     def __init__(self, w3: Web3):
-        self.w3 = w3
-
-    @staticmethod
-    def _align_eoa(eoa: str) -> str:
-        leading_zeros = '0' * 24
-        return f'0x{leading_zeros}{eoa[2:]}'
+        self._w3 = w3
+        self._event_scanner = ERC20EventScanner(w3)
 
     def _get_contract_name(self, address: str) -> str:
-        contract = self.w3.eth.contract(cast(Address, address), abi=NAMED_CONTRACT_ABI)
+        contract = self._w3.eth.contract(cast(Address, address), abi=NAMED_CONTRACT_ABI)
         try:
             return contract.functions.name().call()
         except BadFunctionCallOutput:
             return 'Unknown'
 
     def get_approvals(self, eoa: str) -> list[Approval]:
-        raw_approvals = self.w3.eth.get_logs({
-            'fromBlock': 'earliest',
-            'toBlock': 'latest',
-            'topics': [
-                APPROVAL_SIGNATURE,
-                self._align_eoa(eoa)
-            ],
-        })
-
-        # The approval signature matches not just the ERC20 approval, but also other approvals,
-        # which contain an extra topic. We filter out those approvals.
-        raw_approvals = [approval for approval in raw_approvals if
-                         len(approval['topics']) == ERC20_APPROVAL_TOPICS_COUNT]
+        raw_approvals = self._event_scanner.get_approvals(approver=eoa)
 
         return [
             Approval(
